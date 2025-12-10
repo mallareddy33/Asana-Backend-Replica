@@ -3,10 +3,16 @@ server:
 
 spring:
   datasource:
-    url: jdbc:postgresql://localhost:5432/asana
+    url: jdbc:postgresql://db:5432/asana
     username: asana
     password: asana
+
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: none   # IMPORTANT: let schema.sql run
     show-sql: true
+
+  sql:
+    init:
+      mode: always     # ensures schema.sql executes at startup
+

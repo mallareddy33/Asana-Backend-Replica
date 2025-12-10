@@ -1,4 +1,7 @@
 FROM eclipse-temurin:21-jdk
 WORKDIR /app
-COPY target/asana-backend-replica.jar app.jar
-ENTRYPOINT ["java","-jar","/app/app.jar"]
+
+ARG JAR_FILE=target/*.jar
+COPY ${JAR_FILE} app.jar
+
+ENTRYPOINT ["java", "-jar", "/app/app.jar"]

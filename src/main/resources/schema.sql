@@ -5,7 +5,7 @@
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
 -- WORKSPACES
-CREATE TABLE workspaces (
+CREATE TABLE IF NOT EXISTS workspaces (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     email_domains   text[] DEFAULT '{}',
@@ -16,7 +16,7 @@ CREATE TABLE workspaces (
 );
 
 -- USERS
-CREATE TABLE users (
+CREATE TABLE IF NOT EXISTS users (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     email           text,
@@ -29,11 +29,11 @@ CREATE TABLE users (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_users_workspace_id ON users(workspace_id);
-CREATE UNIQUE INDEX idx_users_email_unique ON users(email) WHERE email IS NOT NULL;
+CREATE INDEX IF NOT EXISTS idx_users_workspace_id ON users(workspace_id);
+CREATE UNIQUE INDEX IF NOT EXISTS  idx_users_email_unique ON users(email) WHERE email IS NOT NULL;
 
 -- TEAMS
-CREATE TABLE teams (
+CREATE TABLE IF NOT EXISTS teams (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     description     text,
@@ -44,10 +44,10 @@ CREATE TABLE teams (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_teams_workspace_id ON teams(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_teams_workspace_id ON teams(workspace_id);
 
 -- TEAM MEMBERSHIPS (user-to-team)
-CREATE TABLE team_memberships (
+CREATE TABLE IF NOT EXISTS team_memberships (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     team_id         text NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
@@ -57,11 +57,11 @@ CREATE TABLE team_memberships (
     created_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX idx_team_memberships_unique
+CREATE UNIQUE INDEX IF NOT EXISTS  idx_team_memberships_unique
     ON team_memberships(team_id, user_id);
 
 -- PROJECTS
-CREATE TABLE projects (
+CREATE TABLE IF NOT EXISTS projects (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     notes           text,
@@ -78,11 +78,11 @@ CREATE TABLE projects (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_projects_workspace_id ON projects(workspace_id);
-CREATE INDEX idx_projects_team_id ON projects(team_id);
+CREATE INDEX IF NOT EXISTS idx_projects_workspace_id ON projects(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_projects_team_id ON projects(team_id);
 
 -- PROJECT MEMBERSHIPS (user-to-project)
-CREATE TABLE project_memberships (
+CREATE TABLE IF NOT EXISTS project_memberships (
     id              uuid PRIMARY KEY DEFAULT uuid_generate_v4(),
 
     project_id      text NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
@@ -92,11 +92,11 @@ CREATE TABLE project_memberships (
     created_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE UNIQUE INDEX idx_project_memberships_unique
+CREATE UNIQUE INDEX IF NOT EXISTS  idx_project_memberships_unique
     ON project_memberships(project_id, user_id);
 
 -- SECTIONS (a.k.a. columns/lists in a project)
-CREATE TABLE sections (
+CREATE TABLE IF NOT EXISTS sections (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     position        numeric(18,6), -- for ordering within project
@@ -107,10 +107,10 @@ CREATE TABLE sections (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_sections_project_id ON sections(project_id);
+CREATE INDEX IF NOT EXISTS idx_sections_project_id ON sections(project_id);
 
 -- TASKS
-CREATE TABLE tasks (
+CREATE TABLE IF NOT EXISTS tasks (
     id                  text PRIMARY KEY,
     name                text NOT NULL,
     notes               text,
@@ -131,13 +131,13 @@ CREATE TABLE tasks (
     updated_at          timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_tasks_workspace_id ON tasks(workspace_id);
-CREATE INDEX idx_tasks_assignee_id ON tasks(assignee_id);
-CREATE INDEX idx_tasks_completed ON tasks(completed);
-CREATE INDEX idx_tasks_due_on ON tasks(due_on);
+CREATE INDEX IF NOT EXISTS idx_tasks_workspace_id ON tasks(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_assignee_id ON tasks(assignee_id);
+CREATE INDEX IF NOT EXISTS idx_tasks_completed ON tasks(completed);
+CREATE INDEX IF NOT EXISTS idx_tasks_due_on ON tasks(due_on);
 
 -- TASK <-> PROJECT (many-to-many)
-CREATE TABLE task_projects (
+CREATE TABLE IF NOT EXISTS task_projects (
     task_id         text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     project_id      text NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     is_primary      boolean DEFAULT false,
@@ -145,10 +145,10 @@ CREATE TABLE task_projects (
     PRIMARY KEY (task_id, project_id)
 );
 
-CREATE INDEX idx_task_projects_project_id ON task_projects(project_id);
+CREATE INDEX IF NOT EXISTS idx_task_projects_project_id ON task_projects(project_id);
 
 -- TASK <-> SECTION (many-to-one via join for ordering within section)
-CREATE TABLE task_sections (
+CREATE TABLE IF NOT EXISTS task_sections (
     task_id         text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     section_id      text NOT NULL REFERENCES sections(id) ON DELETE CASCADE,
     position        numeric(18,6),
@@ -156,10 +156,10 @@ CREATE TABLE task_sections (
     PRIMARY KEY (task_id, section_id)
 );
 
-CREATE INDEX idx_task_sections_section_id ON task_sections(section_id);
+CREATE INDEX IF NOT EXISTS idx_task_sections_section_id ON task_sections(section_id);
 
 -- TAGS
-CREATE TABLE tags (
+CREATE TABLE IF NOT EXISTS tags (
     id              text PRIMARY KEY,
     name            text NOT NULL,
     color           text,
@@ -170,20 +170,20 @@ CREATE TABLE tags (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_tags_workspace_id ON tags(workspace_id);
+CREATE INDEX IF NOT EXISTS idx_tags_workspace_id ON tags(workspace_id);
 
 -- TASK <-> TAG (many-to-many)
-CREATE TABLE task_tags (
+CREATE TABLE IF NOT EXISTS task_tags (
     task_id         text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     tag_id          text NOT NULL REFERENCES tags(id) ON DELETE CASCADE,
 
     PRIMARY KEY (task_id, tag_id)
 );
 
-CREATE INDEX idx_task_tags_tag_id ON task_tags(tag_id);
+CREATE INDEX IF NOT EXISTS idx_task_tags_tag_id ON task_tags(tag_id);
 
 -- STORIES (comments, status updates, system events on tasks/projects)
-CREATE TABLE stories (
+CREATE TABLE IF NOT EXISTS stories (
     id              text PRIMARY KEY,
     type            text NOT NULL, -- e.g. "comment", "system", "status_update"
     text            text,
@@ -197,19 +197,19 @@ CREATE TABLE stories (
     updated_at      timestamptz NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_stories_task_id ON stories(task_id);
-CREATE INDEX idx_stories_project_id ON stories(project_id);
-CREATE INDEX idx_stories_author_id ON stories(author_id);
+CREATE INDEX IF NOT EXISTS idx_stories_task_id ON stories(task_id);
+CREATE INDEX IF NOT EXISTS idx_stories_project_id ON stories(project_id);
+CREATE INDEX IF NOT EXISTS idx_stories_author_id ON stories(author_id);
 
 -- SIMPLE FOLLOWERSHIP (user following tasks/projects)
-CREATE TABLE task_followers (
+CREATE TABLE IF NOT EXISTS task_followers (
     task_id         text NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
     user_id         text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
     PRIMARY KEY (task_id, user_id)
 );
 
-CREATE TABLE project_followers (
+CREATE TABLE IF NOT EXISTS project_followers (
     project_id      text NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
     user_id         text NOT NULL REFERENCES users(id) ON DELETE CASCADE,
 
